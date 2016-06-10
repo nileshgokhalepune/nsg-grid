@@ -14,22 +14,25 @@ npm install --save nsg-grid
 
 ```ts
 import {Component} from '@angular/core';
-import {DatePicker} from 'nsg-grid/nsg-grid';
+import {NsgGrid} from 'nsg-grid/nsg-grid';
 
 @Component({
     selector: 'app',
-    directives:[DatePicker]
+    directives:[NsgGrid]
     template:`
-            <h1>Hello Angular 2 DatePicker</h1>
+            <h1>Hello Angular 2 Grid</h1>
             <nsg-grid></nsg-grid>
            `
 });
 export class AppComponent{
-    myDateValue: any;
+    gridData: any[];
+    gridColumns:GridCoulums = {
+        name:"Column1",
+        caption: "Column one",
+        sortable:true,
+    }
 }
 ```
-
-![alt tag](https://github.com/nileshgokhalepune/nsg-datepicker/blob/master/snapshot.JPG)
 
 ## Author
 
@@ -37,4 +40,4 @@ Nilesh Gokhale
 
 ## License
 
-UNLICENSED. You can use this datepicker at your own risk. Feel free to modify the code as you like based on your requriements.
+UNLICENSED. You can use this grid control at your own risk. Feel free to modify the code as you like based on your requriements.
