@@ -1,0 +1,34 @@
+{
+  "name": "nsg-grid",
+  "version": "0.0.1",
+  "description": "Simple Angular 2 RC1 Grid",
+  "main": "nsg-grid.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nileshgokhalepune/nsg-grid.git"
+  },
+  "keywords": [
+    "Angular2",
+    "Angular",
+    "Grid",
+    "gridview",
+    "component",
+    "datagrid"
+  ],
+  "author": "Nilesh Gokhale",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/nileshgokhalepune/nsg-grid/issues"
+  },
+  "homepage": "https://github.com/nileshgokhalepune/nsg-grid#readme",
+  "dependencies": {
+    "@angular/common": "^2.0.0-rc.1",
+    "@angular/compiler": "^2.0.0-rc.1",
+    "@angular/core": "^2.0.0-rc.1",
+    "rxjs": "^5.0.0-beta.6",
+    "zone.js": "^0.6.12"
+  }
+}
