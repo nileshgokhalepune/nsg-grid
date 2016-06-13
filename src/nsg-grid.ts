@@ -18,6 +18,7 @@ export interface GridOptions {
     pageSize?: number;
     tableStriped?: boolean;
     tableHover?: boolean;
+    showEvents?: boolean;
 }
 
 @Pipe({
@@ -27,7 +28,7 @@ class ValuesPipe implements PipeTransform {
     transform(value: any, ...args: any[]): any {
         if (!value) return;
         let keyArr = Object.keys(value),
-            dataArr = [];
+            dataArr = new Array<any>();
         keyArr.forEach(key => {
             if (args && args.length > 0 && args[0].indexOf(key) !== -1) {
                 dataArr.push(key);
@@ -40,7 +41,6 @@ class ValuesPipe implements PipeTransform {
 
 @Component({
     selector: 'nsg-grid',
-    templateUrl: './app/components/nsg-grid.html',
     pipes: [ValuesPipe],
     directives: [NgFor, NgStyle, NgClass, NgIf],
     styles: [`
@@ -60,14 +60,14 @@ class ValuesPipe implements PipeTransform {
             border-right:1px solid #ddd!important;
         }
     `],
-    template:`
+    template: `
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
             <div class="container-fluid">
                 <div class="panel panel-header">
                     <!--<input type="text" [(ngModel)]="filter" (keyup)="filterData(filter)" />-->
                 </div>
-                <table class="table table-condensed" [ngClass]="{'table-hover': useGridOptions.tableHover, 'table-striped':useGridOptions.tableStriped}">
+                <table class="table table-condensed" [ngClass]="{'table-hover': gridOptions ? gridOptions.tableHover : defaultGridOptions.tableHover, 'table-striped': gridOptions ? gridOptions.tableStriped : defaultGridOptions.tableStriped}">
                     <tr>
                         <th [style.text-align]="textAlign('center')" *ngFor="let column of gridColumns" [style.width]="column.width ? column.width + 'px' : 'auto'">
                             <span *ngIf="!column.sortable">{{column.caption ? column.caption : column.name}}</span>
@@ -89,7 +89,7 @@ class ValuesPipe implements PipeTransform {
                         </td>
                     </tr>
                     <tr>
-                        <td [attr.colspan]="gridColumns.length" [style.visible]="useGridOptions.pageable">
+                        <td [attr.colspan]="gridColumns.length" [style.visible]="gridOptions ? gridOptions.pageable : defaultGridOptions.pageable">
                             <div class="footer" [style.display]="inline">
                                 <div [style.float]="left">
                                     <ul class="pager" *ngIf="(pages && pages.length > 0)">
@@ -112,7 +112,7 @@ class ValuesPipe implements PipeTransform {
                         </td>
                     </tr>
                 </table>
-                <div>
+                <div *ngIf="gridOptions ? gridOptions.showEvents : defaultGridOptions.showEvents">
                 Event: {{gridEvent}}
                 </div>
             </div>    
@@ -120,27 +120,29 @@ class ValuesPipe implements PipeTransform {
 })
 export class NsgGrid implements AfterViewInit, OnChanges {
     @Input('grid-columns') gridColumns: GridColumn[];
-    @Input('grid-data') gridData: any[];
+    @Input('grid-data') gridData: Array<any>;
     @Input('grid-options') gridOptions: GridOptions;
     @Output() rowSelected: EventEmitter<any> = new EventEmitter<any>();
     private providedCols: string[] = [];
-    private originalData: any[];
+    private originalData: Array<any>;
     private filters: GridColumn[] = [];
 
     private totalPages: number;
     private pages: number[];
     private pageNum: number = 0;
     private maxPageNumToShow: number = 5;
-    private useGridOptions: GridOptions;
+
     private defaultGridOptions: GridOptions = {
         pageable: true,
         pageSize: 10,
         tableHover: true,
-        tableStriped: true
-    }
+        tableStriped: true,
+        showEvents:false
+    };
 
     /*Test*/
-    private gridEvent:string;
+    private gridEvent: string;
+    private showEvents: boolean = false;
 
     ngAfterViewInit() {
         if (this.gridColumns) {
@@ -155,11 +157,6 @@ export class NsgGrid implements AfterViewInit, OnChanges {
         if (this.gridData) {
             this.originalData = this.gridData;
         }
-        if (this.gridOptions) {
-            this.useGridOptions = this.gridOptions;
-        } else {
-            this.useGridOptions = this.defaultGridOptions;
-        }
     }
 
     ngOnChanges(changes: {
@@ -167,9 +164,9 @@ export class NsgGrid implements AfterViewInit, OnChanges {
     }) {
         if (changes["gridData"] && changes["gridData"].currentValue) {
             this.originalData = changes["gridData"].currentValue
-            if (this.useGridOptions.pageable) {
+            if (this.gridOptions && this.gridOptions.pageable) {
                 this.pageIt(this.pageNum);
-                this.totalPages = Math.ceil(this.originalData.length / this.useGridOptions.pageSize);
+                this.totalPages = Math.ceil(this.originalData.length / this.gridOptions.pageSize);
                 this.createPageNumbers(this.pageNum);
                 console.log("Data loaded");
                 this.gridEvent = "Data Loaded";
@@ -178,13 +175,12 @@ export class NsgGrid implements AfterViewInit, OnChanges {
     }
 
     constructor() {
-        this.useGridOptions = this.defaultGridOptions;
     }
 
-    private onSort(column) {
+    private onSort(column: GridColumn) {
         if (!this.gridData) return;
         if (!column.sortDesc) {
-            var sortedArray = this.gridData.sort((x, y) => {
+            var sortedArray = <Array<any>>this.gridData.sort((x, y) => {
                 if (x[column.name] > y[column.name]) {
                     return 1;
                 } else if (x[column.name] < y[column.name]) {
@@ -195,35 +191,37 @@ export class NsgGrid implements AfterViewInit, OnChanges {
             });
             column.sortDesc = true;
         } else {
-            var sortedArray = this.gridData.reverse();
+            var sortedArray = <Array<any>>this.gridData.reverse();
             column.sortDesc = false;
         }
         this.gridData = sortedArray;
     }
 
     private filterData(column: GridColumn) {
-        var filteredData = this.originalData.filter((data) => {
+        var filteredData = <Array<any>>this.originalData.filter((data) => {
             if (data[column.name].indexOf(column.filter) !== -1) {
                 return true;
             } else {
                 return false;
             }
         });
-        if (this.useGridOptions.pageable)
+        if (this.gridOptions && this.gridOptions.pageable)
             this.pageIt(this.pageNum);
         this.gridData = filteredData;
     }
 
     private pageIt(pageNum: number) {
-        this.gridData = this.originalData.skip(this.useGridOptions.pageSize * pageNum).take(this.useGridOptions.pageSize);
+        var pageSize = this.gridOptions ? this.gridOptions.pageSize : 10
+        this.gridData = this.take(this.skip(this.originalData, pageSize * pageNum), pageSize);
+
         this.pageNum = pageNum;
         this.createPageNumbers(this.pageNum);
         this.gridEvent = "Page Changed";
     }
 
     private createPageNumbers(currentPage: number) {
-        var numberOfPages = Math.ceil(this.originalData.length / this.useGridOptions.pageSize);
-        var pageStart = currentPage === 0 ? currentPage : currentPage - 1; // currentPage === 0 ? currentPage : (currentPage + this.maxPageNumToShow) >= numberOfPages ? this.maxPageNumToShow - currentPage : currentPage - 1;
+        var numberOfPages = Math.ceil(this.originalData.length / (this.gridOptions ? this.gridOptions.pageSize : 10));
+        var pageStart = currentPage === 0 ? currentPage : currentPage - 1;
 
         var tempPages = Array(this.maxPageNumToShow).fill(pageStart).map((x, i) => {
             return x + i + 1;
@@ -235,7 +233,7 @@ export class NsgGrid implements AfterViewInit, OnChanges {
         })
     }
 
-    private rowSelectedEvent(row) {
+    private rowSelectedEvent(row: any) {
         this.rowSelected.emit(row);
         this.gridEvent = "Row Selected";
     }
@@ -247,27 +245,20 @@ export class NsgGrid implements AfterViewInit, OnChanges {
         return "white";
     }
 
-    private textAlign(align) {
+    private textAlign(align: string) {
         return align;
     }
-
-}
-
-interface ArrayConstructor {
-    skip(count: number): any[];
-    take(count: number): any[];
-}
-
-Array.prototype.skip = function (count: number): any[] {
-    return this.slice(count);
-}
-
-Array.prototype.take = function (count: number) {
-    var takeArray = [];
-    for (var index = 0; index < count; index++) {
-        if (index > this.length) break;
-        var element = this[index];
-        takeArray.push(element);
+    private skip(array: Array<any>, count: number): Array<any> {
+        return <Array<any>>array.slice(count);
     }
-    return takeArray;
+
+    private take(array: Array<any>, count: number): Array<any> {
+        var takeArray = new Array<any>();
+        for (var index = 0; index < count; index++) {
+            if (index > array.length) break;
+            var element = array[index];
+            takeArray.push(element);
+        }
+        return takeArray;
+    }
 }

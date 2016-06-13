@@ -1,15 +1,12 @@
 {
     "compilerOptions": {
-        "target": "es5",
-        "module": "system",
-        "moduleResolution": "node",
-        "sourceMap": true,
+        "noImplicitAny": true,
+        "module": "commonjs",
+        "target": "ES5",
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "removeComments": false,
-        "noImplicitAny": false,
-        "watch": true,
-        "allowSyntheticDefaultImports": true
+        "sourceMap": true,
+        "declaration": true
     },
     "exclude": [
         "node_modules",
@@ -17,5 +14,8 @@
         "typings/main.d.ts",
         "typings/modules",
         "typings/index.d.ts"
+    ],
+     "file":[
+        "nsg-datepicker.js"
     ]
 }

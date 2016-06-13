@@ -31,6 +31,11 @@ export class AppComponent{
         caption: "Column one",
         sortable:true,
     }
+    
+    gridOptions:GridOptions={
+        pageable:true,
+        pageSize: 10
+    }
 }
 ```
 
