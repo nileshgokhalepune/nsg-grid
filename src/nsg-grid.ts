@@ -1,5 +1,5 @@
 import {Component, Input, Pipe, PipeTransform, AfterViewInit, OnChanges, SimpleChange, Output, EventEmitter} from '@angular/core';
-import {NgFor, NgStyle, NgClass, NgIf} from '@angular/common';
+import {NgFor, NgStyle, NgClass, NgIf, DatePipe} from '@angular/common';
 
 export interface GridColumn {
     name: string;
@@ -11,6 +11,7 @@ export interface GridColumn {
     filterable?: boolean;
     filter?: string;
     align?: string;
+    dateFormat?: string;
 }
 
 export interface GridOptions {
@@ -19,6 +20,19 @@ export interface GridOptions {
     tableStriped?: boolean;
     tableHover?: boolean;
     showEvents?: boolean;
+    useDivs?:boolean;
+}
+
+/**
+ * GridDatePipe implements PipeTransform
+ */
+@Pipe({
+    name: 'gridDate'
+})
+class GridDatePipe implements PipeTransform {
+    transform(value: any, ...args: any[]): any {
+        return new Date(value);
+    }
 }
 
 @Pipe({
@@ -41,7 +55,7 @@ class ValuesPipe implements PipeTransform {
 
 @Component({
     selector: 'nsg-grid',
-    pipes: [ValuesPipe],
+    pipes: [ValuesPipe, DatePipe, GridDatePipe],
     directives: [NgFor, NgStyle, NgClass, NgIf],
     styles: [`
         .container{
@@ -63,59 +77,70 @@ class ValuesPipe implements PipeTransform {
     template: `
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
-            <div class="container-fluid">
+            <div class="container-fluid" [style.display]="none">
                 <div class="panel panel-header">
                     <!--<input type="text" [(ngModel)]="filter" (keyup)="filterData(filter)" />-->
                 </div>
-                <table class="table table-condensed" [ngClass]="{'table-hover': gridOptions ? gridOptions.tableHover : defaultGridOptions.tableHover, 'table-striped': gridOptions ? gridOptions.tableStriped : defaultGridOptions.tableStriped}">
-                    <tr>
-                        <th [style.text-align]="textAlign('center')" *ngFor="let column of gridColumns" [style.width]="column.width ? column.width + 'px' : 'auto'">
-                            <span *ngIf="!column.sortable">{{column.caption ? column.caption : column.name}}</span>
-                            <div>
-                                <label *ngIf="column.sortable" class="pointer" (click)="onSort(column)" [style.cursor]="pointer">{{column.caption ? column.caption : column.name}}
-                                <span><i class="fa" [ngClass]="{'fa-sort-asc': !column.sortDesc, 'fa-sort-desc':column.sortDesc}"></i></span></label>
-                            </div>
-                            <!--<input type="text" [(ngModel)]="column.filter" *ngIf="column.filterable" (keyup)="filterData(column)" />-->
-                        </th>
-                    </tr>
-                    <tr *ngFor="let row of gridData" (click)="rowSelectedEvent(row)">
-                        <td  *ngFor="let col of row | values : providedCols">
-                            <span>{{row[col]}}</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td *ngIf="!gridData" [attr.colspan]="gridColumns.length">
-                            <span>No Rows</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td [attr.colspan]="gridColumns.length" [style.visible]="gridOptions ? gridOptions.pageable : defaultGridOptions.pageable">
-                            <div class="footer" [style.display]="inline">
-                                <div [style.float]="left">
-                                    <ul class="pager" *ngIf="(pages && pages.length > 0)">
-                                        <li>
-                                            <a href="#" (click)="pageIt(0)">&lt;&lt;</a>
-                                        </li>
-                                        <li *ngFor="let num of pages">
-                                            <a *ngIf="(num-1) !== pageNum" href="#" (click)="pageIt(num-1)">{{num}}</a>
-                                            <span [style.background-color]="backGround()" [style.color]="color()" *ngIf="(num-1) === pageNum">{{num}}</span>
-                                        </li>
-                                        <li>
-                                            <a href="#" (click)="pageIt(totalPages-1)">&gt;&gt;</a>
-                                        </li>
-                                        <li [style.floot]="right">
-
-                                        </li>
-                                    </ul>
+                <div [style.width]="80 + 'vw'" *ngIf="gridOptions ? gridOptions.useDivs : defaultGridOptions.useDivs">
+                    <table class="table table-condensed" [ngClass]="{'table-hover': gridOptions ? gridOptions.tableHover : defaultGridOptions.tableHover, 'table-striped': gridOptions ? gridOptions.tableStriped : defaultGridOptions.tableStriped}" *ngIf="gridOptions ? gridOptions.useDivs : defaultGridOptions.useDivs">
+                        <tr>
+                            <th [style.text-align]="textAlign('center')" *ngFor="let column of gridColumns" [style.width]="column.width ? column.width + 'px' : 'auto'">
+                                <span *ngIf="!column.sortable">{{column.caption ? column.caption : column.name}}</span>
+                                <div>
+                                    <label *ngIf="column.sortable" class="pointer" (click)="onSort(column)" [style.cursor]="pointer">{{column.caption ? column.caption : column.name}}
+                                            <span><i class="fa" [ngClass]="{'fa-sort-asc': !column.sortDesc, 'fa-sort-desc':column.sortDesc}"></i></span></label>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-                <div *ngIf="gridOptions ? gridOptions.showEvents : defaultGridOptions.showEvents">
-                Event: {{gridEvent}}
+                                <!--<input type="text" [(ngModel)]="column.filter" *ngIf="column.filterable" (keyup)="filterData(column)" />-->
+                            </th>
+                        </tr>
+                        <tr *ngFor="let row of gridData" (click)="rowSelectedEvent(row)">
+                            <td *ngFor="let col of row | values : providedCols">
+                                <span>{{row[col]}}</span>
+                                <span *ngIf="col.dataType && col.dataType == 'date'">{{ row[col] | gridDate}}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td *ngIf="!gridData" [attr.colspan]="gridColumns.length">
+                                <span>No Rows</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td [attr.colspan]="gridColumns.length" [style.visible]="gridOptions ? gridOptions.pageable : defaultGridOptions.pageable">
+                                <div class="footer" [style.display]="inline">
+                                    <div [style.float]="left">
+                                        <ul class="pager" *ngIf="(pages && pages.length > 0)">
+                                            <li>
+                                                <a href="#" (click)="pageIt(0)">&lt;&lt;</a>
+                                            </li>
+                                            <li *ngFor="let num of pages">
+                                                <a *ngIf="(num-1) !== pageNum" href="#" (click)="pageIt(num-1)">{{num}}</a>
+                                                <span [style.background-color]="backGround()" [style.color]="color()" *ngIf="(num-1) === pageNum">{{num}}</span>
+                                            </li>
+                                            <li>
+                                                <a href="#" (click)="pageIt(totalPages-1)">&gt;&gt;</a>
+                                            </li>
+                                            <li [style.floot]="right">
+
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
-            </div>    
+                <div class="table table-condensed table-striped table-hover table-responsive" *ngIf="gridOptions ? gridOptions.useDivs : defaultGridOptions.useDivs">
+                    <div class="row" *ngFor="let row of gridData" (click)="rowSelectedEvent(row)">
+                        <div class="col-md-1" *ngFor="let col of row | values : providedCols">
+                            <span>{{row[col]}}</span>
+                            <span *ngIf="col.dataType && col.dataType == 'date'">{{ row[col] | gridDate}}</span>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="gridOptions ? gridOptions.showEvents : defaultGridOptions.showEvents">
+                    Event: {{gridEvent}}
+                </div>
+            </div>
     `
 })
 export class NsgGrid implements AfterViewInit, OnChanges {
@@ -137,7 +162,8 @@ export class NsgGrid implements AfterViewInit, OnChanges {
         pageSize: 10,
         tableHover: true,
         tableStriped: true,
-        showEvents:false
+        showEvents: false,
+        useDivs:false
     };
 
     /*Test*/
@@ -170,6 +196,7 @@ export class NsgGrid implements AfterViewInit, OnChanges {
                 this.createPageNumbers(this.pageNum);
                 console.log("Data loaded");
                 this.gridEvent = "Data Loaded";
+                console.log(JSON.stringify(this.originalData));
             }
         }
     }
